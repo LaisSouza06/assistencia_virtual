@@ -1,0 +1,87 @@
+import nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+import numpy as np
+import random
+
+# Certificando-se de que os pacotes necessários estão baixados
+nltk.download('punkt')
+
+# Base de conhecimento (exemplo simples)
+intents = {
+    "greeting": {
+        "patterns": ["Olá", "Oi", "Bom dia", "Boa tarde", "Como você está?", "Ei"],
+        "responses": ["Olá!", "Oi, como posso ajudar?", "Oi, tudo bem? Como posso te ajudar hoje?"]
+    },
+    "goodbye": {
+        "patterns": ["Tchau", "Adeus", "Até mais", "Até logo"],
+        "responses": ["Tchau!", "Até logo!", "Até mais, espero ter ajudado!"]
+    },
+    "thanks": {
+        "patterns": ["Obrigado", "Obrigada", "Muito obrigado", "Valeu"],
+        "responses": ["De nada!", "Fico feliz em ajudar!", "Sempre à disposição!"]
+    },
+    "default": {
+        "patterns": ["", "Desculpe, não entendi", "Pode repetir?", "Não sei o que você quis dizer"],
+        "responses": ["Desculpe, não entendi. Pode reformular?", "Não tenho certeza sobre isso."]
+    }
+}
+
+# Pré-processamento dos dados
+def preprocess_data(intents):
+    patterns = []
+    labels = []
+    responses = []
+    
+    for intent in intents:
+        for pattern in intents[intent]["patterns"]:
+            patterns.append(pattern)
+            labels.append(intent)
+            responses.append(random.choice(intents[intent]["responses"]))
+    
+    return patterns, labels, responses
+
+patterns, labels, responses = preprocess_data(intents)
+
+# Vetorização utilizando TF-IDF
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(patterns)
+
+# Treinamento do modelo de classificação (usando Regressão Logística)
+model = LogisticRegression()
+model.fit(X, labels)
+
+# Função para prever a intenção do usuário
+def predict_intent(user_input):
+    user_input = [user_input]
+    X_input = vectorizer.transform(user_input)
+    predicted_label = model.predict(X_input)
+    return predicted_label[0]
+
+# Função de resposta do assistente
+def chatbot_response(user_input):
+    intent = predict_intent(user_input)
+    
+    # Se a intenção for 'default', responde com uma mensagem genérica
+    if intent in intents:
+        response = random.choice(intents[intent]["responses"])
+    else:
+        response = random.choice(intents["default"]["responses"])
+    
+    return response
+
+# Loop de interação com o usuário
+def chat():
+    print("Olá! Eu sou seu assistente virtual. Como posso te ajudar?")
+    while True:
+        user_input = input("Você: ")
+        
+        if user_input.lower() in ['tchau', 'adeus', 'até logo']:
+            print("Assistente: " + chatbot_response(user_input))
+            break
+        
+        print("Assistente: " + chatbot_response(user_input))
+
+# Rodar o chatbot
+if __name__ == "__main__":
+    chat()
